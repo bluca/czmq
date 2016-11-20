@@ -8,7 +8,7 @@
 #
 #   Requires these environment variables be set, e.g.:
 #
-#     ANDROID_NDK_ROOT=$HOME/android-ndk-r11c
+#     ANDROID_NDK_ROOT=$HOME/android-ndk-r13b
 #     TOOLCHAIN_NAME=arm-linux-androideabi-4.9
 #     TOOLCHAIN_VERSION=4.9
 #     TOOLCHAIN_HOST=arm-linux-androideabi

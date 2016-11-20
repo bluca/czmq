@@ -4,7 +4,7 @@
 #  Read the zproject/README.md for information about making permanent changes. #
 ################################################################################
 
-NDK_VER=android-ndk-r11c
+NDK_VER=android-ndk-r13b
 NDK_ABI_VER=4.9
 
 if [ $TRAVIS_OS_NAME == "linux" ]; then
