@@ -30,11 +30,17 @@
     * PUBLISH key value -- publish a key/value pair to the gossip cluster
     * STATUS -- return number of key/value pairs held by gossip service
 
+    DRAFT commands:
+    * KEYS -- return number of keys followed by each key in its own frame
+    * TUPLE key -- return value or empty string if key not found
+
     Returns these messages:
 
     * PORT number -- reply to PORT command
     * STATUS number -- reply to STATUS command
     * DELIVER key value -- new tuple delivered from network
+    * KEYS size key1 ... keyn -- reply to KEYS command
+    * TUPLE value -- reply to TUPLE command
 @discuss
     The gossip protocol distributes information around a loosely-connected
     network of gossip services. The information consists of name/value pairs
@@ -294,6 +300,36 @@ server_method (server_t *self, const char *method, zmsg_t *msg)
         zmsg_addstr (reply, "STATUS");
         zmsg_addstrf (reply, "%d", (int) zhashx_size (self->tuples));
     }
+#ifdef CZMQ_BUILD_DRAFT_API
+    else
+    if (streq (method, "KEYS")) {
+        //  Dump the keys of all stored tuples
+        reply = zmsg_new ();
+        assert (reply);
+        zmsg_addstr (reply, "KEYS");
+        zlistx_t *keys = zhashx_keys (self->tuples);
+        zmsg_addstrf (reply, "%d", (int) zlistx_size (keys));
+        char *key = NULL;
+        for (key = (char *)zlistx_first (keys); key != NULL;
+                key = (char *)zlistx_next (keys))
+            zmsg_addstr (reply, key);
+        zlistx_destroy (&keys);
+    }
+    else
+    if (streq (method, "TUPLE")) {
+        //  Return the requested value
+        reply = zmsg_new ();
+        assert (reply);
+        zmsg_addstr (reply, "TUPLE");
+        char *key = zmsg_popstr (msg);
+        char *value = (char *)zhashx_lookup (self->tuples, key);
+        if (value)
+            zmsg_addstr (reply, value);
+        else
+            zmsg_addstr (reply, "");
+        zstr_free (&key);
+    }
+#endif
     else
         zsys_error ("unknown zgossip method '%s'", method);
 
@@ -516,6 +552,35 @@ zgossip_test (bool verbose)
     assert (atoi (status) == 4);
     zstr_free (&command);
     zstr_free (&status);
+
+#ifdef CZMQ_BUILD_DRAFT_API
+    zstr_send (alpha, "KEYS");
+
+    char *size_str;
+    command = zstr_recv (alpha);
+    assert (streq (command, "KEYS"));
+    zstr_free (&command);
+    size_str = zstr_recv (alpha);
+    int i, size = atoi (size_str);
+    assert (size == 4);
+    zstr_free (&size_str);
+
+    zlist_t *keys = zlist_new ();
+    for (i = 0; i < size; ++i) {
+        key = zstr_recv (alpha);
+        assert (!zlist_append (keys, key));
+    }
+    for (key = (char *)zlist_pop (keys); key != NULL; key = (char *) zlist_pop (keys)) {
+        zstr_sendx (alpha, "TUPLE", key, NULL);
+        zstr_recvx (alpha, &command, &value, NULL);
+        assert (streq (command, "TUPLE"));
+        assert (strneq (value, ""));
+        zstr_free (&command);
+        zstr_free (&value);
+        zstr_free (&key);
+    }
+    zlist_destroy (&keys);
+#endif
 
     zactor_destroy (&base);
     zactor_destroy (&alpha);
