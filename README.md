@@ -2682,11 +2682,17 @@ Provides these commands (sent as multipart strings to the actor):
 * PUBLISH key value -- publish a key/value pair to the gossip cluster
 * STATUS -- return number of key/value pairs held by gossip service
 
+DRAFT commands:
+* KEYS -- return number of keys followed by each key in its own frame
+* TUPLE key -- return value or empty string if key not found
+
 Returns these messages:
 
 * PORT number -- reply to PORT command
 * STATUS number -- reply to STATUS command
 * DELIVER key value -- new tuple delivered from network
+* KEYS size key1 ... keyn -- reply to KEYS command
+* TUPLE value -- reply to TUPLE command
 
 The gossip protocol distributes information around a loosely-connected
 network of gossip services. The information consists of name/value pairs
@@ -2854,6 +2860,76 @@ This is the class self test code:
     
     //  got nothing
     zclock_sleep (200);
+    
+    zstr_send (alpha, "STATUS");
+    char *command, *status, *key, *value;
+    
+    zstr_recvx (alpha, &command, &key, &value, NULL);
+    assert (streq (command, "DELIVER"));
+    assert (streq (key, "inproc://alpha-1"));
+    assert (streq (value, "service1"));
+    zstr_free (&command);
+    zstr_free (&key);
+    zstr_free (&value);
+    
+    zstr_recvx (alpha, &command, &key, &value, NULL);
+    assert (streq (command, "DELIVER"));
+    assert (streq (key, "inproc://alpha-2"));
+    assert (streq (value, "service2"));
+    zstr_free (&command);
+    zstr_free (&key);
+    zstr_free (&value);
+    
+    zstr_recvx (alpha, &command, &key, &value, NULL);
+    assert (streq (command, "DELIVER"));
+    assert (streq (key, "inproc://beta-1"));
+    assert (streq (value, "service1"));
+    zstr_free (&command);
+    zstr_free (&key);
+    zstr_free (&value);
+    
+    zstr_recvx (alpha, &command, &key, &value, NULL);
+    assert (streq (command, "DELIVER"));
+    assert (streq (key, "inproc://beta-2"));
+    assert (streq (value, "service2"));
+    zstr_free (&command);
+    zstr_free (&key);
+    zstr_free (&value);
+    
+    zstr_recvx (alpha, &command, &status, NULL);
+    assert (streq (command, "STATUS"));
+    assert (atoi (status) == 4);
+    zstr_free (&command);
+    zstr_free (&status);
+    
+    #ifdef CZMQ_BUILD_DRAFT_API
+    zstr_send (alpha, "KEYS");
+    
+    char *size_str;
+    command = zstr_recv (alpha);
+    assert (streq (command, "KEYS"));
+    zstr_free (&command);
+    size_str = zstr_recv (alpha);
+    int i, size = atoi (size_str);
+    assert (size == 4);
+    zstr_free (&size_str);
+    
+    zlist_t *keys = zlist_new ();
+    for (i = 0; i < size; ++i) {
+        key = zstr_recv (alpha);
+        assert (!zlist_append (keys, key));
+    }
+    for (key = (char *)zlist_pop (keys); key != NULL; key = (char *) zlist_pop (keys)) {
+        zstr_sendx (alpha, "TUPLE", key, NULL);
+        zstr_recvx (alpha, &command, &value, NULL);
+        assert (streq (command, "TUPLE"));
+        assert (strneq (value, ""));
+        zstr_free (&command);
+        zstr_free (&value);
+        zstr_free (&key);
+    }
+    zlist_destroy (&keys);
+    #endif
     
     zactor_destroy (&base);
     zactor_destroy (&alpha);
