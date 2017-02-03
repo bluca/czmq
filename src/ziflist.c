@@ -60,7 +60,7 @@ static interface_t *
 s_interface_new (char *name, struct sockaddr *address, struct sockaddr *netmask,
         struct sockaddr *broadcast)
 {
-    char hbuf[NI_MAXHOST + 1];
+    char hbuf[NI_MAXHOST];
     int rc;
 
     interface_t *self = (interface_t *) zmalloc (sizeof (interface_t));
@@ -70,23 +70,17 @@ s_interface_new (char *name, struct sockaddr *address, struct sockaddr *netmask,
 
     rc = getnameinfo (address, address->sa_family == AF_INET ?
             sizeof (struct sockaddr_in) : sizeof (struct sockaddr_in6),
-            address->sa_family == AF_INET6 ? hbuf + 1 : hbuf, NI_MAXHOST, NULL,
-                    0, NI_NUMERICHOST);
+            hbuf, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
     assert (rc == 0);
-    if (address->sa_family == AF_INET6) {
-        hbuf [0] = '[';
-        if (IN6_IS_ADDR_LINKLOCAL (&((struct sockaddr_in6 *)address)->sin6_addr)) {
-            zrex_t *rex = zrex_new (NULL);
-            if (!zrex_eq (rex, hbuf, "%")) {
-                strcat (hbuf, "%");
-                strcat (hbuf, name);
-            }
-            zrex_destroy (&rex);
+    if (address->sa_family == AF_INET6 &&
+            IN6_IS_ADDR_LINKLOCAL (&((struct sockaddr_in6 *)address)->sin6_addr)) {
+        zrex_t *rex = zrex_new (NULL);
+        if (!zrex_eq (rex, hbuf, "%")) {
+            strcat (hbuf, "%");
+            strcat (hbuf, name);
         }
-        hbuf [strlen(hbuf) + 1] = '\0';
-        hbuf [strlen(hbuf)] = ']';
+        zrex_destroy (&rex);
     }
-
     self->address = strdup (hbuf);
     assert (self->address);
 
