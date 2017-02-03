@@ -72,6 +72,15 @@ s_interface_new (char *name, struct sockaddr *address, struct sockaddr *netmask,
             sizeof (struct sockaddr_in) : sizeof (struct sockaddr_in6),
             hbuf, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
     assert (rc == 0);
+    if (address->sa_family == AF_INET6 &&
+            IN6_IS_ADDR_LINKLOCAL (&((struct sockaddr_in6 *)address)->sin6_addr)) {
+        zrex_t *rex = zrex_new (NULL);
+        if (!zrex_eq (rex, hbuf, "%")) {
+            strcat (hbuf, "%");
+            strcat (hbuf, name);
+        }
+        zrex_destroy (&rex);
+    }
     self->address = strdup (hbuf);
     assert (self->address);
 
@@ -447,7 +456,7 @@ ziflist_test (bool verbose)
     printf (" * ziflist: ");
     if (verbose)
         printf ("\n");
-
+zsys_set_ipv6(1);
     // TODO: for any Windows dev, any alternative to this?
 #if defined (__WINDOWS__)
     WORD version_requested = MAKEWORD (2, 2);
@@ -473,7 +482,8 @@ ziflist_test (bool verbose)
             name = ziflist_next (iflist);
         }
     }
-    ziflist_reload (iflist);
+    ziflist_reload_ipv6 (iflist);
+    ziflist_print(iflist);
     assert (items == ziflist_size (iflist));
     ziflist_destroy (&iflist);
 
