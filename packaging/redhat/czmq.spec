@@ -39,7 +39,7 @@ Release:        1
 Summary:        the high-level c binding for 0mq
 License:        MPLv2
 URL:            https://github.com/zeromq/czmq
-Source0:        %{name}-%{version}.tar.gz
+Source0:        %{name}_%{version}.tar.xz
 Group:          System/Libraries
 # Note: ghostscript is required by graphviz which is required by
 #       asciidoc. On Fedora 24 the ghostscript dependencies cannot
@@ -146,7 +146,7 @@ exit 1
 %endif
 %endif
 
-%setup -q
+%setup -q -n czmq
 
 %build
 sh autogen.sh
