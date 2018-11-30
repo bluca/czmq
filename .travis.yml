@@ -123,7 +123,7 @@ before_cache:
 
 before_install:
 - if [ $TRAVIS_OS_NAME == "osx" -a $BUILD_TYPE == "android" ] ; then brew install binutils ; fi
-- if [ $TRAVIS_OS_NAME == "osx" -a $BUILD_TYPE == "stable_zmq" ] ; then test -d /usr/local/opt/curl/lib  || { rmdir /usr/local/opt/curl; brew install curl; }; test -d /usr/local/opt/lz4/lib || { rmdir /usr/local/opt/lz4; brew install lz4; }; test -d /usr/local/opt/libsodium/lib    || { rmdir /usr/local/opt/libsodium; brew install libsodium; } ; fi
+- if [ $TRAVIS_OS_NAME == "osx" ] ; then test -d /usr/local/opt/curl/lib  || { rmdir /usr/local/opt/curl; brew install curl; }; test -d /usr/local/opt/lz4/lib || { rmdir /usr/local/opt/lz4; brew install lz4; }; test -d /usr/local/opt/libsodium/lib    || { rmdir /usr/local/opt/libsodium; brew install libsodium; } ; fi
 
 # ZMQ stress tests need more open socket (files) than the usual default
 # On OSX, it seems the way to set the max files limit is constantly changing, so
