@@ -6,6 +6,7 @@
 ################################################################################
 
 set -e
+export CI_TRACE=yes
 
 # Set this to enable verbose profiling
 [ -n "${CI_TIME-}" ] || CI_TIME=""
