@@ -82,6 +82,7 @@ pkg_deps_prereqs_distro: &pkg_deps_prereqs_distro
     - libsystemd-dev
     - liblz4-dev
     - libcurl4-nss-dev
+    - libmicrohttpd-dev
 
 # Prerequisite packages that may be built from source or used from
 # prebuilt packages of that source (usually not from an OS distro)
