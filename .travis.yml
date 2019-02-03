@@ -165,6 +165,7 @@ matrix:
     addons:
       apt:
         packages:
+        - *pkg_deps_common
         - openjdk-7-jdk
   - env: BUILD_TYPE=default ADDRESS_SANITIZER=enabled
     os: linux
